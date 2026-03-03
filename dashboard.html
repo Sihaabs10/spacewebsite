@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interstellar Dashboard: Oort Cloud Explorer</title>
+    <style>
+        :root {
+            --neon-orange: #ff6600;
+            --bg: #050505;
+            --gfg-green: #2fa04a;
+            --text-light: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: var(--bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+        }
+
+        canvas {
+            display: block;
+            transition: filter 0.3s ease;
+        }
+
+        /* --- UI STYLING --- */
+        .neon-box {
+            border: 2px solid var(--neon-orange);
+            box-shadow: 0 0 25px rgba(255, 102, 0, 0.5);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+        }
+
+        .nav-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 260px;
+            z-index: 100;
+        }
+
+        select {
+            width: 100%;
+            background: #111;
+            color: var(--neon-orange);
+            border: 1px solid #444;
+            padding: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            outline: none;
+        }
+
+        #learnBtn {
+            display: none;
+            width: 100%;
+            background: var(--neon-orange);
+            color: black;
+            border: none;
+            padding: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            border-radius: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+            #learnBtn:hover {
+                background: white;
+                color: var(--neon-orange);
+            }
+
+        .back-btn {
+            position: fixed;
+            top: 150px;
+            right: 20px;
+            z-index: 100;
+            background: #222;
+            color: var(--neon-orange);
+            border: 2px solid var(--neon-orange);
+            padding: 8px 15px;
+            cursor: pointer;
+            display: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .tools {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--neon-orange);
+            background: #111;
+            color: var(--neon-orange);
+            cursor: pointer;
+            font-size: 20px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .btn:hover {
+                background: var(--neon-orange);
+                color: black;
+            }
+
+        #learnModal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85vw;
+            max-width: 1200px;
+            height: 85vh;
+            display: none;
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 0;
+            background: #f4f4f4;
+            color: #333;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        .modal-header {
+            background: #111;
+            color: var(--neon-orange);
+            padding: 20px 40px;
+            border-bottom: 4px solid var(--neon-orange);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .modal-header h1 {
+                margin: 0;
+                font-size: 35px;
+                text-transform: uppercase;
+            }
+
+        .close-btn {
+            background: red;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .modal-body {
+            padding: 40px;
+        }
+
+        .hab-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border-left: 5px solid #0078d7;
+        }
+
+            .hab-container h3 {
+                margin-top: 0;
+                color: #222;
+            }
+
+        .progress-bar-bg {
+            width: 100%;
+            background-color: #ddd;
+            border-radius: 20px;
+            overflow: hidden;
+            height: 25px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4e00, #ffb000, #2fa04a);
+            text-align: right;
+            padding-right: 10px;
+            line-height: 25px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: width 1s ease-in-out;
+        }
+
+        .edu-section {
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+            .edu-section h2 {
+                color: var(--gfg-green);
+                border-bottom: 2px solid #eee;
+                padding-bottom: 10px;
+                margin-top: 0;
+            }
+
+        .points-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .point-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+            .point-item::before {
+                content: '✓';
+                color: var(--gfg-green);
+                font-weight: bold;
+            }
+
+        .adv-dis-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .adv-box h3 {
+            color: #0078d7;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .dis-box h3 {
+            color: #d9534f;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        ul.custom-list {
+            list-style: none;
+            padding: 0;
+        }
+
+            ul.custom-list li {
+                margin-bottom: 10px;
+                padding-left: 20px;
+                position: relative;
+                font-size: 14.5px;
+                line-height: 1.5;
+            }
+
+        .adv-box ul.custom-list li::before {
+            content: '➕';
+            position: absolute;
+            left: 0;
+            top: 2px;
+            font-size: 12px;
+        }
+
+        .dis-box ul.custom-list li::before {
+            content: '➖';
+            position: absolute;
+            left: 0;
+            top: 2px;
+            font-size: 12px;
+        }
+
+        .diagram-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #eaeaea;
+            border: 1px dashed #aaa;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        #settingsModal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 350px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .setting-row {
+            margin: 20px 0;
+        }
+
+            .setting-row label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: bold;
+                color: #ccc;
+            }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--neon-orange);
+            cursor: pointer;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 12px;
+            background: #222;
+            border: 2px solid var(--neon-orange);
+            color: var(--neon-orange);
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+            .save-btn:hover {
+                background: var(--neon-orange);
+                color: black;
+            }
+
+        #distance_bar {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--neon-orange);
+            border: 2px solid var(--neon-orange);
+            padding: 12px 25px;
+            font-weight: 900;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 8px;
+            z-index: 100;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(255, 102, 0, 0.4);
+            text-align: center;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="back-btn" id="btnBack" onclick="resetView()">← BACK TO SYSTEM</button>
+
+    <div class="nav-panel neon-box">
+        <label style="font-size: 11px; color: #888; display: block; margin-bottom: 5px;">MISSION CONTROL</label>
+        <select id="planetMenu" onchange="selectPlanet(this.value)">
+            <option value="">-- SYSTEM SCAN --</option>
+            <option value="Mercury">Mercury</option>
+            <option value="Venus">Venus</option>
+            <option value="Earth">Earth</option>
+            <option value="Mars">Mars</option>
+            <option value="Jupiter">Jupiter</option>
+            <option value="Saturn">Saturn</option>
+            <option value="Uranus">Uranus</option>
+            <option value="Neptune">Neptune</option>
+            <option value="Pluto">Pluto</option>
+            <option value="Voyager 1">Voyager 1 Probe</option>
+            <option value="New Horizons">New Horizons Probe</option>
+        </select>
+        <button id="learnBtn" onclick="openLearn()">ACCESS PLANET DATA</button>
+    </div>
+
+    <div id="distance_bar">Distance to Sun: <span id="dynamic_dist">Calculating...</span></div>
+
+    <div id="learnModal">
+        <div class="modal-header">
+            <h1 id="mTitle">Planet Name</h1>
+            <button class="close-btn" onclick="closeModal('learnModal')">CLOSE X</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="diagram-container" id="mDiagram"></div>
+            <div class="hab-container">
+                <h3>Human Habitability Probability</h3>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="mHabBar" style="width: 0%;">0%</div>
+                </div>
+                <p style="font-size: 13px; color: #666; margin-top: 10px; margin-bottom: 0;">Based on atmospheric pressure, temperature extremes, radiation levels, and presence of liquid water.</p>
+            </div>
+            <div class="edu-section">
+                <h2>25 Important Scientific Points</h2>
+                <div class="points-grid" id="mPoints"></div>
+            </div>
+            <div class="edu-section adv-dis-container">
+                <div class="adv-box">
+                    <h3>Advantages (Colonization/Resource Perspective)</h3>
+                    <ul class="custom-list" id="mAdv"></ul>
+                </div>
+                <div class="dis-box">
+                    <h3>Disadvantages & Hazards</h3>
+                    <ul class="custom-list" id="mDis"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="neon-box">
+        <h2 style="color:var(--neon-orange); margin-top:0;">Display Settings</h2>
+        <div class="setting-row">
+            <label>Brightness</label>
+            <input type="range" id="brightSlider" min="0.5" max="2" step="0.1" value="1" oninput="updateFilters()">
+        </div>
+        <div class="setting-row">
+            <label>Contrast</label>
+            <input type="range" id="contrastSlider" min="0.5" max="2" step="0.1" value="1" oninput="updateFilters()">
+        </div>
+        <button class="save-btn" onclick="saveSettings()">SAVE & APPLY</button>
+    </div>
+
+    <div class="tools">
+        <button class="btn" onclick="zoom(true)" title="Zoom In">➕</button>
+        <button class="btn" onclick="zoom(false)" title="Zoom Out">➖</button>
+        <button class="btn" onclick="document.getElementById('settingsModal').style.display='block'" title="Settings">⚙️</button>
+        <button class="btn" onclick="toggleLight()" title="Master Light">💡</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- CONSTANTS ---
+        const DUST_START_THRESHOLD = 2000;
+        const DUST_MAX_THRESHOLD = 5000;
+        const KM_TO_LY_DIVISOR = 9460730;
+
+        const generateDummyPoints = (name) => {
+            const arr = [];
+            for (let i = 1; i <= 25; i++) arr.push(`${name} Science Point #${i}: Detailed analytical metric analysis showing unique spectral telemetry and core density data reference ${Math.floor(Math.random() * 9000)}.`);
+            return arr;
+        };
+
+        const db = {
+            "Mercury": { hab: 0.1, points: ["Smallest planet.", "Closest to Sun.", generateDummyPoints("Mercury")], adv: ["Proximity to immense solar energy.", "Rich in iron & metals."], dis: ["No breathable air.", "Extreme temperature fluctuations."] },
+            "Venus": { hab: 0.0, points: ["Hottest planet.", "Retrograde rotation.", generateDummyPoints("Venus")], adv: ["Gravity is close to Earth's (90%).", "Carbon dioxide for terraforming."], dis: ["Crushing pressure.", "Rains sulfuric acid."] },
+            "Earth": { hab: 100, points: ["Only known life.", "Surface is 71% water.", generateDummyPoints("Earth")], adv: ["Perfect conditions for liquid water.", "Breathable atmosphere."], dis: ["FINITE fossil fuel resources.", " Natural disasters."] },
+            "Mars": { hab: 15.5, points: ["'Red Planet'.", "Olympus Mons volcano.", generateDummyPoints("Mars")], adv: ["Day length identical to Sol.", "Water ice can be extracted."], dis: ["Perchlorates in toxic soil.", "Zero radiation protection."] },
+            "Jupiter": { hab: 0.0, points: ["Largest planet.", "Gas Giant.", generateDummyPoints("Jupiter")], adv: ["Slingshot maneuvers.", "Europa subsurface ocean."], dis: ["Intense radiation belts.", "No solid surface."] },
+            "Saturn": { hab: 0.0, points: ["Spectacular rings.", "Hexagonal storm.", generateDummyPoints("Saturn")], adv: ["Titan is prime candidate (air, liquid).", " unlimited water ice from rings."], dis: ["Supersonic wind speeds.", "Extremely high pressure."] },
+            "Uranus": { hab: 0.0, points: [" Ice Giant.", "discovered in 1781.", generateDummyPoints("Uranus")], adv: ["Abundant methane and water.", "Refueling Depot potential."], dis: ["Coldest planetary atmosphere.", "Extreme axial tilt seasons."] },
+            "Neptune": { hab: 0.0, points: [" Ice Giant.", "Predicted with math.", generateDummyPoints("Neptune")], adv: ["Subsurface activity on Triton.", "Vast methane resources."], dis: ["Furthest planet; decades to reach.", "Violent winds."] },
+            "Pluto": { hab: 0.0, points: ["Dwarf planet in Kuiper Belt.", "Surface of nitrogen ice, water ice, and carbon monoxide ice.", "Has 5 known moons, largest is Charon.", "Day is 6.4 Earth days.", generateDummyPoints("Pluto")], adv: ["Rich source of water and methane.", "Ideal scientific outpost for studying deep space.", "Vast underground ocean could exist.", "Could serve as a base for Kuiper Belt missions."], dis: ["Extremely cold temperatures (-230°C).", "No breathable air.", "Subject to immense communication lag (hours).", "Vast distance from Sun makes solar power useless."] },
+            "Voyager 1": { hab: 0.0, points: ["Launched in 1977.", "First spacecraft to visit Jupiter and Saturn.", "Entered interstellar space in 2012.", "Communicates via 3.7m dish.", generateDummyPoints("Voyager 1")], adv: ["Most distance human object.", "Provides data on interstellar space.", "Golden Record onboard for aliens."], dis: ["Finite power supply.", "Limited instrument lifespan.", "Vast distance makes real-time control impossible."] },
+            "New Horizons": { hab: 0.0, points: ["Launched in 2006.", "Missions targeting Pluto/Charon and Kuiper Belt.", "Passed Pluto at 12,500km distance.", "Discovered Hearts of ice on Pluto.", generateDummyPoints("New Horizons")], adv: ["Vast data on Kuiper Belt objects.", "Fastest human launch.", "High-resolution images of Pluto/Charon."], dis: ["Long-term mission required for each pass.", "Finite fuel limits maneuverability.", "Lesser scientific payload than Voyager."] }
+        };
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.set(0, 300, 700);
+        const texLoader = new THREE.TextureLoader();
+
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.FogExp2(0x000000, 0);
+
+        function createCloudParticleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            // UPDATED TO WHITE
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+            gradient.addColorStop(0.4, 'rgba(220, 230, 255, 0.2)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 128, 128);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const cosmicDustGroup = new THREE.Group();
+        const heavyFogGeo = new THREE.BufferGeometry();
+        const heavyFogPos = [];
+        const cloudTex = createCloudParticleTexture();
+        for (let i = 0; i < 8000; i++) {
+            const dist = 500 + Math.random() * 2500;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            heavyFogPos.push(Math.sin(phi) * Math.cos(theta) * dist, Math.sin(phi) * Math.sin(theta) * (dist * 0.35), Math.cos(phi) * dist);
+        }
+        heavyFogGeo.setAttribute('position', new THREE.Float32BufferAttribute(heavyFogPos, 3));
+        const heavyFogMat = new THREE.PointsMaterial({
+            color: 0xffffff, map: cloudTex, size: 250,
+            transparent: true, opacity: 0.0,
+            depthWrite: false, blending: THREE.AdditiveBlending
+        });
+        const heavyFog = new THREE.Points(heavyFogGeo, heavyFogMat);
+        cosmicDustGroup.add(heavyFog);
+
+        const fineDustGeo = new THREE.BufferGeometry();
+        const fineDustPos = [];
+        for (let i = 0; i < 35000; i++) {
+            const dist = 300 + Math.random() * 3500;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            fineDustPos.push(Math.sin(phi) * Math.cos(theta) * dist, Math.sin(phi) * Math.sin(theta) * (dist * 0.4), Math.cos(phi) * dist);
+        }
+        fineDustGeo.setAttribute('position', new THREE.Float32BufferAttribute(fineDustPos, 3));
+        const fineDustMat = new THREE.PointsMaterial({
+            color: 0xffffff, size: 2.5, // UPDATED TO WHITE
+            transparent: true, opacity: 0.0,
+            depthWrite: false, blending: THREE.AdditiveBlending
+        });
+        const fineDust = new THREE.Points(fineDustGeo, fineDustMat);
+        cosmicDustGroup.add(fineDust);
+        scene.add(cosmicDustGroup);
+
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = [];
+        for (let i = 0; i < 8000; i++) starPos.push((Math.random() - 0.5) * 8000, (Math.random() - 0.5) * 8000, (Math.random() - 0.5) * 8000);
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+        scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.8 })));
+        scene.add(new THREE.PointLight(0xffffff, 4, 3000));
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.15); scene.add(ambLight);
+
+        const sunUniforms = { time: { value: 0.0 } };
+        const sunMaterial = new THREE.ShaderMaterial({
+            uniforms: sunUniforms,
+            vertexShader: `varying vec3 vPosition; void main() { vPosition = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+            fragmentShader: `uniform float time; varying vec3 vPosition; void main() { float n1 = sin(vPosition.x*0.1+time)*sin(vPosition.y*0.1+time); float n2 = sin(vPosition.y*0.15-time*1.2)*sin(vPosition.z*0.15-time); vec3 c1=vec3(0.9,0.3,0.0); vec3 c2=vec3(1.0,0.9,0.1); gl_FragColor=vec4(mix(c1,c2,(n1+n2+2.0)*0.25),1.0); }`
+        });
+        const sun = new THREE.Mesh(new THREE.SphereGeometry(40, 64, 64), sunMaterial); scene.add(sun);
+        const sunGlow = new THREE.Mesh(new THREE.SphereGeometry(44, 64, 64), new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.25, side: THREE.BackSide })); scene.add(sunGlow);
+
+        function generatePlanetTexture(baseColorHex, type) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 256; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = baseColorHex; ctx.fillRect(0, 0, 512, 256);
+            if (type === 'gas') {
+                for (let i = 0; i < 30; i++) {
+                    ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.15})`;
+                    ctx.fillRect(0, Math.random() * 256, 512, Math.random() * 20 + 5);
+                    ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`;
+                    ctx.fillRect(0, Math.random() * 256, 512, Math.random() * 15 + 2);
+                }
+            } else if (type === 'rocky') {
+                for (let i = 0; i < 2000; i++) {
+                    ctx.beginPath();
+                    ctx.arc(Math.random() * 512, Math.random() * 256, Math.random() * 2 + 0.5, 0, Math.PI * 2); ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.1})`;
+                    ctx.fill();
+                    ctx.beginPath(); ctx.arc(Math.random() * 512, Math.random() * 256, Math.random() * 1.5 + 0.5, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`; ctx.fill();
+                }
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const pData = {
+            "Mercury": { size: 4, dist: 90, speed: 0.015, color: '#888888', type: 'rocky' },
+            "Venus": { size: 8, dist: 140, speed: 0.01, color: '#e3bb76', type: 'rocky' },
+            "Earth": { size: 9, dist: 200, speed: 0.008, color: '#2244bb', type: 'real' },
+            "Mars": { size: 6, dist: 260, speed: 0.006, color: '#d14009', type: 'rocky' },
+            "Jupiter": { size: 22, dist: 360, speed: 0.003, color: '#c88b3a', type: 'gas' },
+            "Saturn": { size: 18, dist: 460, speed: 0.002, color: '#e6dbb8', type: 'gas', hasRing: true },
+            "Uranus": { size: 12, dist: 550, speed: 0.0015, color: '#82f1f1', type: 'gas' },
+            "Neptune": { size: 12, dist: 630, speed: 0.001, color: '#3344ff', type: 'gas' },
+            "Pluto": { size: 3, dist: 720, speed: 0.0005, color: '#6a493a', type: 'rocky' },
+        };
+        const planets = {};
+        const planetMeshes = [];
+
+        Object.keys(pData).forEach(name => {
+            const d = pData[name];
+            let matConfig = { emissive: new THREE.Color(d.color), emissiveIntensity: 0.05, roughness: 0.8 };
+            if (d.type === 'real') matConfig.map = texLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg');
+            else { matConfig.map = generatePlanetTexture(d.color, d.type); if (d.type === 'gas') matConfig.roughness = 0.3; }
+
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(d.size, 64, 64), new THREE.MeshStandardMaterial(matConfig));
+            mesh.userData = { planetName: name }; planetMeshes.push(mesh);
+            const group = new THREE.Group(); group.add(mesh); mesh.position.x = d.dist; scene.add(group);
+            const orbitRing = new THREE.Mesh(new THREE.RingGeometry(d.dist - 0.4, d.dist + 0.4, 128), new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.1, transparent: true, side: THREE.DoubleSide }));
+            orbitRing.rotation.x = Math.PI / 2; scene.add(orbitRing);
+            if (d.hasRing) {
+                const saturnRingGeo = new THREE.RingGeometry(d.size * 1.3, d.size * 2.2, 64);
+                const rCanvas = document.createElement('canvas'); rCanvas.width = 512; rCanvas.height = 10; const rctx = rCanvas.getContext('2d');
+                rctx.fillStyle = 'rgba(230,219,184,0.5)';
+                rctx.fillRect(0, 0, 512, 10); rctx.fillStyle = 'rgba(0,0,0,0.8)'; rctx.fillRect(100, 0, 20, 10); rctx.fillRect(300, 0, 50, 10);
+                const saturnRing = new THREE.Mesh(saturnRingGeo, new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(rCanvas), side: THREE.DoubleSide, transparent: true, opacity: 0.8 }));
+                saturnRing.rotation.x = Math.PI / 2; mesh.add(saturnRing);
+            }
+            planets[name] = { mesh, group, speed: d.speed, size: d.size, name: name };
+        });
+
+        const probesData = {
+            "Voyager 1": { dist: 950, size: 2, color: '#fcc731', facts: ["Voyager 1"] },
+            "New Horizons": { dist: 780, size: 1.5, color: '#fcc731', facts: ["New Horizons"] }
+        };
+        const objects = {};
+        Object.keys(planets).forEach(k => objects[k] = planets[k]);
+        Object.keys(probesData).forEach(name => {
+            const spec = probesData[name];
+            const body = new THREE.Mesh(new THREE.BoxGeometry(spec.size, spec.size, spec.size), new THREE.MeshStandardMaterial({ color: spec.color }));
+            const dish = new THREE.Mesh(new THREE.CircleGeometry(spec.size * 1.5, 32), new THREE.MeshStandardMaterial({ color: '#bbb', emissive: spec.color, emissiveIntensity: 0.1 }));
+            dish.position.z = spec.size * 0.7; body.add(dish);
+            const group = new THREE.Group(); group.add(body); scene.add(group);
+            body.position.x = spec.dist;
+            body.userData = { planetName: name }; planetMeshes.push(body);
+            objects[name] = { mesh: body, group, speed: 0, size: spec.size, name: name };
+        });
+        const billionScaleRingGeo = new THREE.RingGeometry(1000, 1000.5, 128);
+        const billionScaleRing = new THREE.Mesh(billionScaleRingGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.15 }));
+        billionScaleRing.rotation.x = Math.PI / 2; scene.add(billionScaleRing);
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2(); let hoveredPlanet = null;
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1; mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera); document.body.style.cursor = 'default';
+            if (hoveredPlanet) hoveredPlanet.mesh.material.emissiveIntensity = 0.05; hoveredPlanet = null;
+            const intersects = raycaster.intersectObjects(planetMeshes);
+            if (intersects.length > 0) {
+                const p = intersects[0].object;
+                if (p.userData.planetName) {
+                    hoveredPlanet = objects[p.userData.planetName]; hoveredPlanet.mesh.material.emissiveIntensity = 0.6; document.body.style.cursor = 'pointer';
+                }
+            }
+        });
+        window.addEventListener('click', () => { if (hoveredPlanet && document.getElementById('learnModal').style.display !== 'block') { selectPlanet(hoveredPlanet.name); openLearn(); } });
+
+        let target = null;
+        let selectedName = "";
+
+        function selectPlanet(name) {
+            if (!name) { resetView(); return; }
+            selectedName = name; target = objects[name];
+            document.getElementById('planetMenu').value = name;
+            document.getElementById('btnBack').style.display = 'block'; document.getElementById('learnBtn').style.display = 'block';
+        }
+
+        function resetView() {
+            target = null;
+            document.getElementById('btnBack').style.display = 'none'; document.getElementById('learnBtn').style.display = 'none';
+            document.getElementById('planetMenu').value = ""; controls.target.set(0, 0, 0);
+        }
+
+        function openLearn() {
+            if (!selectedName) return;
+            const data = db[selectedName];
+            document.getElementById('mTitle').innerText = `${selectedName}: MISSION DATA`;
+            document.getElementById('mDiagram').innerText = ``;
+            const bar = document.getElementById('mHabBar');
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = `${data.hab}%`; bar.innerText = `${data.hab}%`;
+                if (data.hab < 5) bar.style.background = '#d9534f'; else if (data.hab < 50) bar.style.background = '#f0ad4e'; else bar.style.background = '#2fa04a';
+            }, 300);
+            const ptsDiv = document.getElementById('mPoints'); ptsDiv.innerHTML = "";
+            const pointsToShow = (data.points && Array.isArray(data.points[2])) ? data.points[2] : data.points || [];
+            pointsToShow.forEach(p => { const d = document.createElement('div'); d.className = 'point-item'; d.innerText = p; ptsDiv.appendChild(d); });
+            const advUl = document.getElementById('mAdv');
+            advUl.innerHTML = "";
+            (data.adv || []).forEach(a => { const li = document.createElement('li'); li.innerText = a; advUl.appendChild(li); });
+            const disUl = document.getElementById('mDis');
+            disUl.innerHTML = ""; (data.dis || []).forEach(d => { const li = document.createElement('li'); li.innerText = d; disUl.appendChild(li); });
+            document.getElementById('learnModal').style.display = 'block';
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function zoom(isIn) { camera.position.z += isIn ? -50 : 50; }
+        function toggleLight() { ambLight.intensity = ambLight.intensity > 0.5 ? 0.15 : 1.5; }
+        function updateFilters() {
+            const b = document.getElementById('brightSlider').value;
+            const c = document.getElementById('contrastSlider').value;
+            document.querySelector('canvas').style.filter = `brightness(${b}) contrast(${c})`;
+        }
+        function saveSettings() { closeModal('settingsModal'); }
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            sunUniforms.time.value += 0.03; sun.rotation.y += 0.002;
+            sunGlow.scale.set(1 + Math.sin(Date.now() * 0.002) * 0.02, 1 + Math.sin(Date.now() * 0.002) * 0.02, 1);
+            cosmicDustGroup.rotation.y += 0.0005;
+
+            Object.keys(objects).forEach(n => {
+                const o = objects[n];
+                if (o.group && o.speed > 0) o.group.rotation.y += o.speed;
+                if (o.mesh) o.mesh.rotation.y += 0.01;
+            });
+            if (target) {
+                const worldPos = target.mesh.getWorldPosition(new THREE.Vector3());
+                controls.target.lerp(worldPos, 0.1);
+                camera.position.lerp(new THREE.Vector3(worldPos.x, worldPos.y + target.size, worldPos.z + target.size * 5), 0.05);
+            }
+
+            const currentDistanceInMillionKM = camera.position.length() * 1.5;
+
+            if (currentDistanceInMillionKM >= DUST_START_THRESHOLD) {
+                let intensity = (currentDistanceInMillionKM - DUST_START_THRESHOLD) / (DUST_MAX_THRESHOLD - DUST_START_THRESHOLD);
+                intensity = Math.max(0, Math.min(1, intensity));
+
+                let blackColor = new THREE.Color(0x000000);
+                // UPDATED BACKGROUND FADE TO WHITE/GREY
+                let dustColor = new THREE.Color(0xffffff);
+
+                scene.background = blackColor.clone().lerp(dustColor, intensity * 0.08); // Subtle white haze
+
+                if (scene.fog) {
+                    scene.fog.color = dustColor;
+                    scene.fog.density = 0.0004 * intensity;
+                }
+
+                heavyFogMat.opacity = 0.12 * intensity;
+                fineDustMat.opacity = 0.7 * intensity;
+
+            } else {
+                scene.background.setHex(0x000000);
+                if (scene.fog) scene.fog.density = 0;
+                heavyFogMat.opacity = 0;
+                fineDustMat.opacity = 0;
+            }
+
+            let distanceText = `Distance to Sun: ${currentDistanceInMillionKM.toFixed(0)} Million KM`;
+            if (currentDistanceInMillionKM >= DUST_START_THRESHOLD) {
+                let lightYears = currentDistanceInMillionKM / KM_TO_LY_DIVISOR;
+                distanceText += ` | ${lightYears.toFixed(5)} LY`;
+            }
+
+            document.getElementById('dynamic_dist').innerText = distanceText;
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        animate();
+    </script>
+</body>
+</html>
